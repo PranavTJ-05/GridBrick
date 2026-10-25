@@ -43,11 +43,12 @@ function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
     const request = activeView === "decision"
-      ? getDecisionView(deliveryDate, cutoff)
-      : getAccuracy(cutoff);
+      ? getDecisionView(deliveryDate, cutoff, controller.signal)
+      : getAccuracy(cutoff, controller.signal);
 
     request
       .then((result) => {
@@ -58,9 +59,11 @@ function App() {
         }
       })
       .catch((reason) => {
+        if (reason instanceof DOMException && reason.name === "AbortError") return;
         setError(reason instanceof Error ? reason.message : "Unable to load data");
       })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [activeView, deliveryDate, cutoff]);
 
   const underforecastCount = useMemo(
