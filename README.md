@@ -61,42 +61,27 @@ Open <http://localhost:5173>.
 
 The repository includes a production Docker image that serves the built React application and FastAPI API from one process. This is the simplest deployment shape for the challenge because it produces one public URL and keeps the browser/API routing together.
 
-### Heroku Container Registry
+### Render Web Service
 
-Heroku's Docker runtime provides the web process port through the `PORT` environment variable. The production image uses that variable and falls back to `8000` only for local execution. Heroku's current container deployment flow is:
-
-```bash
-heroku login
-heroku create windready-your-name --stack container
-heroku container:login
-heroku container:push web --app windready-your-name
-heroku container:release web --app windready-your-name
-heroku open --app windready-your-name
-```
-
-If you are building on an ARM machine, build the image for Heroku's supported `linux/amd64` architecture:
-
-```bash
-docker build --platform linux/amd64 -t windready:latest .
-```
+Deploy the repository as a Docker Web Service on Render. Select the `main` branch and use `./Dockerfile`. Render supplies the `PORT` environment variable; the production image binds FastAPI to that port and serves the compiled React frontend from the same public URL.
 
 Before submitting, verify the public application and API directly:
 
 ```bash
-curl --fail https://windready-your-name.herokuapp.com/api/health
-curl --fail "https://windready-your-name.herokuapp.com/api/decision-view?delivery_date=2026-01-15&cutoff=23:59"
+curl --fail https://windready-gridbricks.onrender.com/api/health
+curl --fail "https://windready-gridbricks.onrender.com/api/decision-view?delivery_date=2026-01-15&cutoff=23:59"
 ```
 
 The deployment must show `data_source` as `Elexon BMRS`. If Elexon is unavailable, the API must return an explicit `503` instead of showing replacement data.
 
-The alternative is to deploy the React and FastAPI services separately on Vercel. For this repository, the combined Heroku Docker deployment is recommended because it needs one URL, one build, and no cross-origin production configuration.
+The combined Render Docker deployment is recommended because it needs one URL, one build, and no cross-origin production configuration.
 
 ## Deployment link
 
 Add the final public URL here before submitting the challenge:
 
 ```text
-https://<your-heroku-app>.herokuapp.com
+https://windready-gridbricks.onrender.com
 ```
 
 ## Tests
