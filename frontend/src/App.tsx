@@ -127,9 +127,9 @@ function App() {
         <section className="hero">
           <div className="hero-copy">
             <div className="hero-kicker"><span className="pulse-mark" /> PROCUREMENT CONTROL ROOM <span className="hero-kicker-line" /> LIVE ANALYSIS</div>
-            <h1>Buy with a clearer view of the wind.</h1>
-            <p>See the forecast the desk could actually use, measure the miss against realized generation, and carry a quantified uncertainty buffer into the day-ahead decision.</p>
-            <div className="hero-footnote"><span className="hero-footnote-icon">↗</span><span>Latest eligible forecast vintage before the decision cutoff</span></div>
+            <h1>Make the day-ahead call with evidence.</h1>
+            <p>WindReady reconstructs the forecast available before the decision, measures the miss against realized generation, and turns uncertainty into a clear operating signal.</p>
+            <div className="hero-footnote"><span className="hero-footnote-icon">↗</span><span>Latest eligible forecast before the decision cutoff</span></div>
           </div>
           <div className="hero-note">
             <div className="hero-note-top"><div className="hero-note-label">ANALYSIS WINDOW</div><span className="hero-note-chip">LOCKED</span></div>
