@@ -1,37 +1,139 @@
 # WindReady
 
-WindReady is a React and Python decision-support prototype for a UK energy procurement team. It compares Elexon's national wind-generation forecasts with wind-generation actuals for January 2026 and exposes the forecast vintage that was available before a day-ahead decision cutoff.
+**Day-ahead wind intelligence for energy procurement decisions.**
 
-## Product scope
+WindReady is a full-stack decision-support dashboard built for the Gridbricks Software Engineering task. It helps an energy procurement team understand the wind forecast that was genuinely available before a day-ahead decision, compare it with realized national wind generation, and quantify the uncertainty around that decision.
 
-- View the latest forecast available before a configurable cutoff for a selected delivery date.
-- Compare hourly forecast wind generation with hourly actual wind generation.
-- Quantify forecast quality using MAE, RMSE, WAPE, bias, underforecast rate, and P90 absolute error.
-- Keep the limitation visible: demand, prices, and thermal generation were not supplied, so this prototype measures wind forecast uncertainty rather than final procurement volume or cost.
+The product is deliberately focused: it does not pretend that forecast error alone determines the final purchase volume or cost. Demand, prices, and thermal-generation data were not part of the supplied scope, so WindReady presents the wind signal and its uncertainty as an auditable input to procurement planning.
 
-## Business problem solved
+## Project walkthrough
 
-An energy procurement team must decide how much power to buy for the next delivery day before the day arrives. Wind generation is uncertain, so the team needs two things: the newest forecast that was available at the decision time and a quantified view of how much that type of forecast has missed historically. WindReady provides that evidence for January 2026 without pretending that wind forecast error alone is the final procurement requirement.
+Watch the recorded project explanation before exploring the code or the live application:
 
-## Stack
+[![Watch the WindReady project walkthrough](https://img.youtube.com/vi/1AuuheRKIQY/maxresdefault.jpg)](https://www.youtube.com/watch?v=1AuuheRKIQY)
 
-- Frontend: React, TypeScript, Vite, Recharts
-- Backend: Python, FastAPI, httpx
-- Deployment shape: Docker Compose locally; frontend and API can be deployed separately or served behind one reverse proxy.
+[Watch the full WindReady project explanation on YouTube](https://www.youtube.com/watch?v=1AuuheRKIQY)
+
+## Live application
+
+**Production:** [windready-gridbricks.onrender.com](https://windready-gridbricks.onrender.com)
+
+The deployed application serves the React dashboard and FastAPI API from one Docker web service. It uses same-origin API requests in production and displays the source as **Elexon BMRS** when the live data has been loaded successfully.
+
+## What the dashboard does
+
+- Select a delivery date within January 2026.
+- Set the decision cutoff time used to select the eligible forecast vintage.
+- Compare the selected forecast with realized hourly wind generation.
+- Inspect forecast publication time and lead time for each delivery period.
+- Review MAE, RMSE, WAPE, bias, underforecast rate, and P90 absolute error.
+- Explore daily forecast quality, intraday bias, and the month-wide error distribution.
+- Inspect the underlying FUELHH and WINDFOR dataset previews through the FastAPI documentation.
+- Show an explicit source-unavailable error when Elexon cannot be reached; no synthetic or dummy fallback data is used.
+
+## The key product decision
+
+WindReady does not simply compare the latest forecast with the actual result. For every delivery hour, it reconstructs the latest forecast that had been published **on or before the selected decision cutoff**.
+
+The selection rule is:
+
+```text
+forecast target time = delivery time
+forecast publication time <= decision cutoff
+select the latest eligible publication
+```
+
+This prevents the dashboard from using information that would not have been available to the buyer when the purchasing decision was made.
+
+## Data sources
+
+WindReady uses live Elexon BMRS data:
+
+| Dataset | Purpose | Application treatment |
+| --- | --- | --- |
+| `FUELHH` | Half-hourly generation outturn by fuel type | Filtered to `fuelType=WIND`, then averaged into hourly actuals |
+| `WINDFOR` | Wind-generation forecasts | Matched to delivery hours and filtered by forecast publication cutoff |
+
+The upstream API endpoints are:
+
+- [`FUELHH` stream](https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELHH/stream)
+- [`WINDFOR` stream](https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR/stream)
+
+The original documentation pages are available from the [Elexon BMRS API documentation](https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/FUELHH/stream).
+
+## API overview
+
+The public FastAPI application exposes the dashboard data and small, recruiter-friendly dataset previews:
+
+```text
+GET /api/health
+GET /api/metadata
+GET /api/decision-view?delivery_date=2026-01-15&cutoff=23:59
+GET /api/accuracy?from=2026-01-01&to=2026-01-31&cutoff=23:59
+GET /api/datasets/fuelhh?from=2026-01-15&to=2026-01-15&limit=5
+GET /api/datasets/windfor?from=2026-01-15&to=2026-01-15&limit=5
+```
+
+Open the interactive API documentation at:
+
+```text
+https://windready-gridbricks.onrender.com/docs
+```
+
+The dataset preview endpoints return the source URL, the exact query used, the number of records received, and a small sample of real upstream rows. They are intended to make the data lineage easy to demonstrate during a review or video walkthrough.
+
+## Accuracy metrics
+
+The dashboard uses the following metrics:
+
+- **MAE — Mean Absolute Error:** typical absolute size of the forecast miss.
+- **RMSE — Root Mean Square Error:** emphasizes larger misses.
+- **Bias:** average signed error, calculated as `forecast - actual`.
+- **WAPE — Weighted Absolute Percentage Error:** total absolute error divided by total actual generation.
+- **Underforecast rate:** proportion of valid periods where `forecast < actual`.
+- **P90 absolute error:** the 90th-percentile absolute miss, used as a practical planning reference.
+
+## Architecture
+
+```text
+React + TypeScript dashboard
+            │
+            │ REST/JSON
+            ▼
+FastAPI application
+            │
+            ├── Elexon client
+            ├── Timestamp normalization
+            ├── Half-hourly → hourly actual aggregation
+            ├── Latest eligible forecast-vintage selection
+            └── Forecast metrics and grouped accuracy summaries
+```
+
+The backend is the only component that communicates with Elexon. The frontend consumes typed application responses, keeping source-specific filtering and business rules out of the browser.
+
+## Technology stack
+
+- **Frontend:** React, TypeScript, Vite, Recharts
+- **Backend:** Python, FastAPI, Pydantic, httpx
+- **Validation and testing:** Pytest, TypeScript build checks
+- **Packaging:** Docker, Docker Compose
+- **Deployment:** Render Docker Web Service
 
 ## Repository structure
 
 ```text
-backend/app/              FastAPI application and data/metric services
-backend/tests/            Unit tests for selection, normalization, and metrics
-frontend/src/              React dashboard
-scripts/                  Data preparation helpers
-docker-compose.yml         Local two-container development setup
+backend/app/              FastAPI routes, schemas, data services, and metrics
+backend/tests/            Tests for selection, normalization, metrics, and source failures
+frontend/src/              React dashboard, charts, API client, and visual system
+Dockerfile                Multi-stage production image
+docker-compose.yml        Local development setup
 ```
 
-## Start locally
+## Run locally
 
-### Without Docker
+### Backend and frontend without Docker
+
+Create a Python environment and start the API:
 
 ```bash
 python3 -m venv .venv
@@ -40,100 +142,64 @@ pip install -r backend/requirements.txt
 uvicorn backend.app.main:app --reload --port 8000
 ```
 
-In a second terminal:
+In a second terminal, install and start the frontend:
 
 ```bash
 npm install --prefix frontend
 npm run dev --prefix frontend
 ```
 
-Open <http://localhost:5173>.
+Open [http://localhost:5173](http://localhost:5173).
 
-### With Docker
+### Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-Open <http://localhost:5173>.
-
 ## Production deployment
 
-The repository includes a production Docker image that serves the built React application and FastAPI API from one process. This is the simplest deployment shape for the challenge because it produces one public URL and keeps the browser/API routing together.
+The production `Dockerfile` uses a multi-stage build:
 
-### Render Web Service
+1. Install frontend dependencies and build the React application.
+2. Install Python dependencies.
+3. Copy the compiled frontend into the backend image.
+4. Start FastAPI on Render's supplied `PORT`.
+5. Serve the dashboard and API from the same public origin.
 
-Deploy the repository as a Docker Web Service on Render. Select the `main` branch and use `./Dockerfile`. Render supplies the `PORT` environment variable; the production image binds FastAPI to that port and serves the compiled React frontend from the same public URL.
+For a Render deployment, select the repository's `main` branch and deploy it as a Docker Web Service using `./Dockerfile`. The combined deployment keeps frontend routing and API requests together and avoids production cross-origin configuration.
 
-Before submitting, verify the public application and API directly:
+## Verification commands
 
-```bash
-curl --fail https://windready-gridbricks.onrender.com/api/health
-curl --fail "https://windready-gridbricks.onrender.com/api/decision-view?delivery_date=2026-01-15&cutoff=23:59"
-```
-
-The deployment must show `data_source` as `Elexon BMRS`. If Elexon is unavailable, the API must return an explicit `503` instead of showing replacement data.
-
-The combined Render Docker deployment is recommended because it needs one URL, one build, and no cross-origin production configuration.
-
-## Deployment link
-
-Add the final public URL here before submitting the challenge:
-
-```text
-https://windready-gridbricks.onrender.com
-```
-
-## Tests
+Run the backend tests and frontend production build from the repository root:
 
 ```bash
 pytest -q backend/tests
 npm run build --prefix frontend
+python3 -m compileall -q backend
+git diff --check
 ```
 
-## Data and assumptions
+Verify the deployed service directly:
 
-- Actuals come from the Elexon `FUELHH` dataset filtered to `fuelType=WIND`.
-- Forecasts come from the Elexon `WINDFOR` dataset.
-- Delivery dates are constrained to January 2026 to match the challenge.
-- Actual half-hourly values are averaged into hourly values to align with the hourly forecast series.
-- The default decision cutoff is `23:59 UTC` on the day before delivery. The UI allows the cutoff to be changed because the challenge does not define a market gate-closure time.
-- The backend caches successful API responses in memory for the process lifetime. If Elexon is unavailable, the API returns HTTP 503 and the UI shows an explicit source-unavailable error; it never substitutes synthetic or dummy values.
-
-## Source links and fields
-
-The challenge documentation pages are:
-
-```text
-https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/FUELHH/stream
-https://bmrs.elexon.co.uk/api-documentation/endpoint/datasets/WINDFOR/stream
+```bash
+curl --fail https://windready-gridbricks.onrender.com/api/health
+curl --fail "https://windready-gridbricks.onrender.com/api/decision-view?delivery_date=2026-01-15&cutoff=23:59"
+curl --fail "https://windready-gridbricks.onrender.com/api/accuracy?from=2026-01-01&to=2026-01-31&cutoff=23:59"
 ```
 
-The application calls the current Elexon Insights REST API behind those documentation pages:
+Successful data responses should identify:
 
-```text
-https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELHH/stream
-https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR/stream
+```json
+"data_source": "Elexon BMRS"
 ```
 
-`FUELHH` supplies half-hourly generation outturn by fuel type. Wind rows are selected with `fuelType=WIND`; `startTime` identifies the delivery interval and `generation` is the wind output. `WINDFOR` supplies forecast values; `startTime` identifies the forecast target interval, `publishTime` identifies when that forecast became available, and `generation` is the forecasted wind output. The selection logic uses `publishTime`, not just the target interval, so it can reconstruct what was knowable before the decision cutoff.
+If Elexon is unavailable, the backend returns HTTP `503` and the frontend shows an explicit source-unavailable state. The application never substitutes dummy, generated, or synthetic market data.
 
-## Architecture
+## Scope and assumptions
 
-```text
-React + Recharts UI
-        │ REST/JSON
-        ▼
-FastAPI application
-        │
-        ├── Elexon client: fetches FUELHH and WINDFOR
-        ├── Normalization: converts timestamps and averages FUELHH to hourly
-        ├── Forecast selection: chooses latest eligible vintage before cutoff
-        └── Metrics: calculates error and accuracy summaries
-```
-
-The backend is the only component that talks to Elexon. The frontend only consumes typed application responses, which keeps source-specific filtering and business rules out of the browser.
-
-## AI assistance disclosure
-
-AI assistance was used for project scaffolding, implementation support, and documentation drafting. Data interpretation, forecast-selection logic, tests, and the final product decisions were reviewed as part of the implementation.
+- Delivery dates are limited to January 1–31, 2026 to match the task scope.
+- The default cutoff is `23:59 UTC` on the day before delivery; the UI keeps it configurable because the task does not specify a market gate-closure time.
+- FUELHH half-hourly actuals are averaged into hourly values for comparison with the forecast series.
+- Forecast selection uses publication time, not just forecast target time.
+- Demand, electricity prices, thermal availability, and final procurement cost are outside the supplied scope.
