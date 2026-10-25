@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .schemas import AccuracyResponse, DecisionResponse, DecisionRow, MetricSummary
 from .services.data_service import DataUnavailableError, MAX_DATE, MIN_DATE, build_rows
+from .services.elexon_client import fetch_dataset_preview
 from .services.metrics import summarize
 
 app = FastAPI(title="WindReady API", version="0.1.0")
@@ -65,6 +66,35 @@ async def metadata() -> dict:
         "resolution": "Hourly comparison; FUELHH actuals are averaged from half-hourly records",
         "default_cutoff": "23:59 UTC on the day before delivery",
     }
+
+
+async def dataset_preview(dataset: str, date_from: str, date_to: str, limit: int) -> dict:
+    parsed_from = validate_date(date_from)
+    parsed_to = validate_date(date_to)
+    if parsed_from > parsed_to:
+        raise HTTPException(status_code=400, detail="The from date must be before the to date")
+    try:
+        return await fetch_dataset_preview(dataset, parsed_from, parsed_to, limit=limit)
+    except Exception as error:
+        raise HTTPException(status_code=503, detail=f"Elexon {dataset} data is unavailable") from error
+
+
+@app.get("/api/datasets/fuelhh")
+async def fuelhh_preview(
+    date_from: str = Query("2026-01-15", alias="from"),
+    date_to: str = Query("2026-01-15", alias="to"),
+    limit: int = Query(25, ge=1, le=100),
+) -> dict:
+    return await dataset_preview("FUELHH", date_from, date_to, limit)
+
+
+@app.get("/api/datasets/windfor")
+async def windfor_preview(
+    date_from: str = Query("2026-01-15", alias="from"),
+    date_to: str = Query("2026-01-15", alias="to"),
+    limit: int = Query(25, ge=1, le=100),
+) -> dict:
+    return await dataset_preview("WINDFOR", date_from, date_to, limit)
 
 
 @app.get("/api/decision-view", response_model=DecisionResponse)

@@ -52,3 +52,51 @@ async def fetch_elexon_data(start: date, end: date) -> tuple[list[dict], list[di
         ),
     )
     return actuals, forecasts
+
+
+async def fetch_dataset_preview(
+    dataset: str,
+    start: date,
+    end: date,
+    *,
+    limit: int = 25,
+) -> dict[str, Any]:
+    """Fetch a small, video-friendly preview from one real BMRS dataset."""
+    if dataset == "FUELHH":
+        rows = await _get(
+            "/datasets/FUELHH/stream",
+            {
+                "settlementDateFrom": start.isoformat(),
+                "settlementDateTo": end.isoformat(),
+                "fuelType": "WIND",
+            },
+        )
+        query = {
+            "settlementDateFrom": start.isoformat(),
+            "settlementDateTo": end.isoformat(),
+            "fuelType": "WIND",
+        }
+        description = "Half-hourly actual generation filtered to fuelType=WIND"
+    else:
+        forecast_start = datetime.combine(start - timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc)
+        forecast_end = datetime.combine(end + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)
+        rows = await _get(
+            "/datasets/WINDFOR/stream",
+            {
+                "publishDateTimeFrom": forecast_start.isoformat().replace("+00:00", "Z"),
+                "publishDateTimeTo": forecast_end.isoformat().replace("+00:00", "Z"),
+            },
+        )
+        query = {
+            "publishDateTimeFrom": forecast_start.isoformat().replace("+00:00", "Z"),
+            "publishDateTimeTo": forecast_end.isoformat().replace("+00:00", "Z"),
+        }
+        description = "Wind forecasts including publication and target timestamps"
+    return {
+        "dataset": dataset,
+        "description": description,
+        "source": f"{BASE_URL}/datasets/{dataset}/stream",
+        "query": query,
+        "returned_rows": len(rows),
+        "rows": rows[:limit],
+    }
