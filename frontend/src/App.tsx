@@ -33,7 +33,19 @@ function formatDay(value: string) {
   });
 }
 
+function WindReadyMark({ className = "" }: { className?: string }) {
+  return (
+    <svg className={`windready-mark ${className}`} viewBox="0 0 100 100" role="img" aria-label="WindReady mark">
+      <path className="windready-mark-ring" d="M18 35 A33 33 0 1 1 25 73" />
+      <path className="windready-mark-w" d="M25 33 L35 68 L50 44 L65 68 L75 33" />
+      <path className="windready-mark-tail" d="M62 74 H79" />
+      <circle className="windready-mark-node" cx="79" cy="74" r="2.5" />
+    </svg>
+  );
+}
+
 function App() {
+  const [introVisible, setIntroVisible] = useState(true);
   const [activeView, setActiveView] = useState<"decision" | "accuracy">("decision");
   const [deliveryDate, setDeliveryDate] = useState("2026-01-15");
   const [cutoff, setCutoff] = useState("23:59");
@@ -41,6 +53,11 @@ function App() {
   const [accuracy, setAccuracy] = useState<AccuracyResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIntroVisible(false), 1550);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -80,10 +97,18 @@ function App() {
   }, [decision]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${introVisible ? "is-intro-visible" : ""}`}>
+      <div className="intro-screen" aria-hidden={!introVisible}>
+        <div className="intro-lockup">
+          <WindReadyMark className="intro-mark" />
+          <div className="intro-wordmark">WINDREADY</div>
+          <div className="intro-rule" />
+          <div className="intro-caption">DAY-AHEAD WIND INTELLIGENCE</div>
+        </div>
+      </div>
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark"><span>W</span><i /></div>
+          <div className="brand-mark"><WindReadyMark /></div>
           <div>
             <div className="brand-name">WindReady <span>CONTROL ROOM</span></div>
             <div className="brand-subtitle">Day-ahead wind intelligence</div>

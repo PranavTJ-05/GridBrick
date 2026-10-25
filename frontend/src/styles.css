@@ -75,3 +75,67 @@ input:hover { border-color: #a8c8cc; } input:focus { border-color: #2aa784; box-
 @media (max-width: 1050px) { .control-panel { flex-wrap: wrap; }.control-panel-heading { flex-basis: 100%; }.control-explainer { max-width: 360px; } }
 @media (max-width: 850px) { .topbar { padding: 0 20px; }.content { padding: 0 20px 30px; }.hero { padding: 28px 24px; flex-direction: column; align-items: stretch; }.hero-note { align-self: stretch; }.summary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }.lower-grid, .chart-grid { grid-template-columns: 1fr; }.chart-panel-wide { grid-column: auto; }.section-intro { align-items: flex-start; flex-direction: column; }.section-intro-meta { padding-bottom: 0; }.analysis-intro { display: block; }.analysis-intro p { text-align: left; margin-top: 10px; }.footer { padding-left: 20px; padding-right: 20px; gap: 12px; flex-direction: column; }.topbar-right { display: none; }.chart-legend { padding-top: 0; } }
 @media (max-width: 500px) { .brand-name span { display: none; }.hero h1 { font-size: 34px; }.hero-kicker-line, .hero-kicker { font-size: 8px; }.summary-row { grid-template-columns: 1fr; }.view-tabs { overflow-x: auto; }.scope-label { display: none; }.main-panel, .table-panel, .insight-panel { padding: 17px 15px; }.chart-tall { height: 300px; }.panel-heading { flex-direction: column; }.chart-legend { align-self: flex-start; }.analysis-callout { align-items: flex-start; }.analysis-callout-source { display: none; } }
+
+/* Editorial control-room treatment */
+:root {
+  font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  color: #152c31;
+  background: #f3f0e9;
+}
+body { background: #f3f0e9; }
+.app-shell { background: #f3f0e9; }
+.topbar { height: 72px; padding: 0 clamp(22px, 5vw, 76px); background: #07191f; border-bottom: 1px solid rgba(255,255,255,.08); }
+.brand { gap: 13px; }
+.brand-mark { width: 38px; height: 38px; border: 1px solid rgba(101, 222, 183, .5); border-radius: 10px; background: #55d0aa; box-shadow: none; }
+.brand-mark .windready-mark { width: 30px; height: 30px; }
+.brand-name { font-size: 17px; letter-spacing: -.035em; }
+.brand-name span { color: #62d1ad; letter-spacing: .18em; }
+.brand-subtitle { color: #8aa3a5; letter-spacing: .01em; }
+.windready-mark { display: block; overflow: visible; }
+.windready-mark-ring, .windready-mark-w, .windready-mark-tail { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.windready-mark-ring { stroke-width: 1.9; stroke-dasharray: 160 70; stroke-dashoffset: 18; }
+.windready-mark-w { stroke-width: 2.1; }
+.windready-mark-tail { stroke-width: 1.7; }
+.windready-mark-node { fill: currentColor; }
+.brand-mark .windready-mark { color: #082b2d; }
+.content { max-width: 1480px; padding: 0 clamp(22px, 5vw, 76px) 52px; }
+.hero { margin: 32px 0 20px; min-height: 320px; border-radius: 0 0 24px 24px; padding: 48px clamp(28px, 4vw, 60px); background: #0a303b; box-shadow: 0 22px 45px rgba(20, 48, 52, .12); }
+.hero::before { width: 760px; height: 760px; right: -120px; top: -410px; border-color: rgba(105, 225, 185, .2); box-shadow: 0 0 0 70px rgba(105, 225, 185, .045), 0 0 0 140px rgba(105, 225, 185, .025); }
+.hero::after { opacity: .08; background-size: 42px 42px; }
+.hero-kicker, .eyebrow { letter-spacing: .17em; }
+.hero h1 { max-width: 710px; font-size: clamp(39px, 5vw, 70px); font-weight: 650; letter-spacing: -.07em; line-height: .94; }
+.hero p { color: #b7d0ce; max-width: 620px; font-size: 14px; }
+.hero-note { border-radius: 3px; background: rgba(3, 25, 31, .32); border-color: rgba(151, 231, 204, .25); }
+.control-panel, .panel, .metric-card { border-radius: 3px; border-color: #d9dfd9; box-shadow: 0 7px 22px rgba(20, 46, 49, .035); }
+.control-panel { padding: 20px 22px; background: #faf9f5; }
+input { border-radius: 3px; background: #fffefa; }
+.view-tabs { margin-top: 27px; border-bottom-color: #cbd6d1; }
+.tab { border-radius: 0; }
+.tab.active { color: #0c343b; border-color: #22a783; }
+.section-intro h2, .panel-heading h2, .panel-heading h3 { font-weight: 650; }
+.summary-row { gap: 11px; }
+.metric-card { min-height: 126px; padding: 19px 20px; }
+.metric-value { font-size: 27px; }
+.main-panel, .table-panel, .insight-panel, .chart-panel { border-radius: 3px; }
+.insight-panel { background: #0b3039; }
+.footer { color: #7f918e; }
+
+/* First-load identity sequence */
+.intro-screen { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: #07090a; color: #f7f5ed; transition: opacity .55s ease, visibility .55s ease; }
+.intro-lockup { display: flex; flex-direction: column; align-items: center; gap: 14px; animation: intro-rise 1.15s cubic-bezier(.2,.8,.2,1) both; }
+.intro-mark { width: 178px; height: 178px; color: #f7f5ed; }
+.intro-mark .windready-mark-ring { stroke-dasharray: 160 70; animation: draw-ring 1.2s cubic-bezier(.2,.8,.2,1) both; }
+.intro-mark .windready-mark-w { stroke-dasharray: 150; stroke-dashoffset: 150; animation: draw-w 1s .28s ease-out forwards; }
+.intro-mark .windready-mark-tail { stroke-dasharray: 20; stroke-dashoffset: 20; animation: draw-tail .45s .8s ease-out forwards; }
+.intro-mark .windready-mark-node { opacity: 0; animation: node-in .2s 1.15s ease-out forwards; }
+.intro-wordmark { font-size: 15px; font-weight: 700; letter-spacing: .3em; margin-left: .3em; }
+.intro-rule { width: 140px; height: 1px; background: rgba(247,245,237,.35); transform-origin: center; animation: rule-in .7s .5s ease-out both; }
+.intro-caption { color: #74d8b4; font-size: 9px; letter-spacing: .22em; margin-left: .22em; }
+.app-shell:not(.is-intro-visible) .intro-screen { opacity: 0; visibility: hidden; pointer-events: none; }
+@keyframes draw-ring { from { stroke-dashoffset: 230; } to { stroke-dashoffset: 18; } }
+@keyframes draw-w { to { stroke-dashoffset: 0; } }
+@keyframes draw-tail { to { stroke-dashoffset: 0; } }
+@keyframes node-in { to { opacity: 1; } }
+@keyframes rule-in { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes intro-rise { from { opacity: 0; transform: translateY(13px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .intro-screen, .intro-lockup, .intro-mark .windready-mark-ring, .intro-mark .windready-mark-w, .intro-mark .windready-mark-tail, .intro-mark .windready-mark-node, .intro-rule { animation: none; transition: none; } .intro-mark .windready-mark-w, .intro-mark .windready-mark-tail { stroke-dashoffset: 0; } .intro-mark .windready-mark-node { opacity: 1; } }
